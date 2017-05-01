@@ -15,27 +15,23 @@ REQUIRED_SCOPES = "bot"
 
 log = logging.getLogger(__name__)
 
+# Dictionary containing the values in config.json
 config = {}
 
-#@app.route("/auth", methods=["GET"])
-#def pre_auth():
-#   return '''
-#       <a href="https://slack.com/oauth/authorize?scope={0}&client_id={1}">
-#           <img src="https://api.slack.com/img/sign_in_with_slack.png" />
-#       </a>
-#   '''.format(REQUIRED_SCOPES, config["clientID"])
+# Slack Client API object
+slack = {}
+
+def api_call(method, **kwargs):
+    return slack.api_call(method, **kwargs)
 
 if __name__ == "__main__":
     with open('config.json') as configFile:
         config = json.load(configFile)
 
-    log.info("Starting redacted-slack-bot with client id %s", config["clientID"])
-    log.info("Authorizing...")
+    log.info("Starting redacted-slack-bot")
+    slack = SlackClient(config["slackToken"])
 
-    # Use temporary client with empty API token so we can get a token
-    SlackClient("").api_call("oauth.access", 
-        client_id = config["clientID"],
-        client_secret = config["clientSecret"],
-        )
+    result = api_call("chat.postMessage", channel="#random", text="test", as_user=True)
+    pprint(result)
 
 #   app.run()
