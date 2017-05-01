@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import time
 
 from pprint import pprint
 
@@ -31,7 +32,12 @@ if __name__ == "__main__":
     log.info("Starting redacted-slack-bot")
     slack = SlackClient(config["slackToken"])
 
-    result = api_call("chat.postMessage", channel="#random", text="test", as_user=True)
-    pprint(result)
+    #result = api_call("chat.postMessage", channel="#random", text="test", as_user=True)
+    #pprint(result)
+
+    if slack.rtm_connect():
+        while True:
+            print(slack.rtm_read())
+            time.sleep(1)
 
 #   app.run()
