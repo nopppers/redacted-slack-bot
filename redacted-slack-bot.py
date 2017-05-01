@@ -24,15 +24,19 @@ config = {}
 slack = {}
 
 
+# Thrown when an API call fails
 class APIException(Exception):
     pass
 
 
+# Performs an API call without raising errors
 def unsafe_call(method, **kwargs):
     log.info("Performing API call %s", method)
     return slack.api_call(method, **kwargs)
 
 
+# Performs an API call
+# Raises an APIException if the call fails
 def call(method, **kwargs):
     result = unsafe_call(method, **kwargs)
     if result["ok"] != True:
@@ -43,8 +47,7 @@ def call(method, **kwargs):
         return result
 
 
-
-
+# Entry point
 if __name__ == "__main__":
     with open('config.json') as configFile:
         config = json.load(configFile)
