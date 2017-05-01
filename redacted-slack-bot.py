@@ -40,4 +40,12 @@ if __name__ == "__main__":
             print(slack.rtm_read())
             time.sleep(1)
 
+    # What's next?
+    # api_call that raises errors if "ok" is false
+    # Change its avatar
+    # Make it join channels
+    # Make it react to slash commands -- Does it matter if it's in the room?
+    # Make it react to direct messages?
+    # Check out Discourse API (reference wisemonk)
+
 #   app.run()
