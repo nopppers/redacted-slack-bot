@@ -1,11 +1,18 @@
 import bisect
+import logging
 
-# A handler only takes input and turns it into arguments to a python function
+import api
+
+log = logging.getLogger(__name__)
+
 
 # Stores message handlers in a priority-sorted list
 class ResponseSystem(object):
-    def __init__(self):
-        self.handlers = [] # Sorted list of (priority, handlerFunction)
+    def __init__(self, handlers = None):
+        if not handlers:
+            self.handlers = [] # Sorted list of (priority, handlerFunction)
+        else:
+            self.handlers = handlers
 
     # Adds a handler with the given priority.
     # 0 means the handler will be tried first.
@@ -21,8 +28,13 @@ class ResponseSystem(object):
 
         # This loop returns early if one of the handlers consumed the message
         for priority, handler in self.handlers:
-            # Unpack multiple return values into ResponseResult
-            handlerResult = HandlerResult(*handler(messageText))
+            try:
+                # Unpack multiple return values into ResponseResult
+                handlerResult = HandlerResult(*handler(messageText))
+            except Exception as e:
+                errStr = "Error while attempting to handle message: " + str(e)
+                log.error(errStr)
+                api.send_error(errStr)
 
             if handlerResult.handled:
                 result.handled.append(handler)

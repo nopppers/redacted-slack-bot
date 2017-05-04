@@ -6,6 +6,11 @@ import time
 
 import config
 import api
+import response_system
+import rtm_message
+
+from response_system import ResponseSystem
+from rtm_message import IncomingRTMMessage
 
 # Comma separated list of scopes as specified here: https://api.slack.com/docs/oauth-scopes
 # Since this is a Custom Bot, 'bot' gives us access to a lot: https://api.slack.com/bot-users#api_usage
@@ -15,44 +20,42 @@ import api
 
 log = logging.getLogger(__name__)
 
-# Slack Client API object
-slack = {}
-
-
-# Thrown when an API call fails
-class APIException(Exception):
-    pass
-
-
-# Performs an API call without raising errors
-def unsafe_call(method, **kwargs):
-    log.info("Performing API call %s", method)
-    return slack.api_call(method, **kwargs)
-
-
-# Performs an API call
-# Raises an APIException if the call fails
-def call(method, **kwargs):
-    result = unsafe_call(method, **kwargs)
-    if result["ok"] != True:
-        exception = APIException('"ok" was false: {0}'.format(pprint.format(result)))
-        raise exception
-    else:
-        log.info("API call succeeded.")
-        return result
-
 
 # Entry point
 if __name__ == "__main__":
     config.init()
     api.init()
+    rtm_message.init()
+
+    def console_printer(msg):
+        pprint.pprint(msg.message)
+        return True, False  # Handled, not consumed
+
+    def default_handler(msg):
+        if msg.isDirectedAtBot:
+            api.send_message(msg.channel, "We have not learned such things yet.")
+            return True, True
+        return False, False
+
+    responseSystem = ResponseSystem([
+        (20, console_printer),
+        (100, default_handler)
+    ])
 
     log.info("Starting redacted-slack-bot")
 
     if api.rtm_connect():
-       while True:
-           print(api.rtm_read())
-           time.sleep(1)
+        while True:
+            messages = api.rtm_read()
+            for rawMessage in messages:
+                try:
+                    responseSystem.handle(IncomingRTMMessage(rawMessage))
+                except Exception as e:
+                    errStr = "Error in response system: " + str(e)
+                    log.error(errStr)
+                    api.send_error(errStr)
+
+            time.sleep(1)
 
     # Use this and find the bot user to find what the value of slackBotID should be.
     #result = call("users.list", channel="#random", text="test", as_user=True)
