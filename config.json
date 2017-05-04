@@ -1,3 +1,4 @@
 {
-    "slackToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    "slackToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "slackBotID": "xxxxxxxxx"
 }
