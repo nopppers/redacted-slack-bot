@@ -2,6 +2,7 @@ import bisect
 
 # A handler only takes input and turns it into arguments to a python function
 
+# Stores message handlers in a priority-sorted list
 class ResponseSystem(object):
     def __init__(self):
         self.handlers = [] # Sorted list of (priority, handlerFunction)
