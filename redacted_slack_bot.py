@@ -1,13 +1,11 @@
-import os
-import json
 import logging
+import pprint
 import time
 
-import pprint
-
 # from flask import Flask, request
-from slackclient import SlackClient
 
+import config
+import api
 
 # Comma separated list of scopes as specified here: https://api.slack.com/docs/oauth-scopes
 # Since this is a Custom Bot, 'bot' gives us access to a lot: https://api.slack.com/bot-users#api_usage
@@ -16,9 +14,6 @@ from slackclient import SlackClient
 # app = Flask(__name__)
 
 log = logging.getLogger(__name__)
-
-# Dictionary containing the values in config.json
-config = {}
 
 # Slack Client API object
 slack = {}
@@ -47,22 +42,23 @@ def call(method, **kwargs):
         return result
 
 
-# Entry poins
+# Entry point
 if __name__ == "__main__":
-    with open('config.json') as configFile:
-        config = json.load(configFile)
+    config.init()
+    api.init()
 
     log.info("Starting redacted-slack-bot")
-    slack = SlackClient(config["slackToken"])
+
+    if api.rtm_connect():
+       while True:
+           print(api.rtm_read())
+           time.sleep(1)
 
     # Use this and find the bot user to find what the value of slackBotID should be.
     #result = call("users.list", channel="#random", text="test", as_user=True)
     #pprint.pprint(result)
 
-    if slack.rtm_connect():
-       while True:
-           print(slack.rtm_read())
-           time.sleep(1)
+
 
     # What's next?
     # Make it join channels

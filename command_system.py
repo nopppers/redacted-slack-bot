@@ -21,7 +21,8 @@ class ResponseSystem(object):
 
         # This loop returns early if one of the handlers consumed the message
         for priority, handler in self.handlers:
-            handlerResult = handler(messageText)
+            # Unpack multiple return values into ResponseResult
+            handlerResult = HandlerResult(*handler(messageText))
 
             if handlerResult.handled:
                 result.handled.append(handler)

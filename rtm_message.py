@@ -3,6 +3,7 @@ import json
 AT_BOT = ""
 
 def init(botID):
+    global AT_BOT
     AT_BOT = '<@' + botID + '>'
 
 # Wraps an incoming RTM message
