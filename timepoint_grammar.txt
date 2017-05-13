@@ -1,0 +1,40 @@
+re.IGNORECASE
+
+timedateduration - timepoint OR (timepoint TO timepoint)
+
+timepoint - timedate or timeduration
+
+timedate - unixtimestamp OR
+           (date AND time) OR
+           (time AND date)
+
+timeduration -
+
+date - compactdate OR longdate
+
+time - militarytime OR standardtime
+
+militarytime - milhournum : minnum
+standardtime - stdhournum : minnum : ampm
+
+milhournum = (0*[1-9]|1[0-9]|2[0-4])
+stdhournum = (0*[1-9]|1[0-2])
+ampm = (am|pm)
+
+compactdate - monthnum / daynum / yearnum
+
+longdate - monthname dayexpr OR
+           monthname dayexpr yearnum
+
+monthname - 
+
+dayexpr - daynum OR
+          longdaynum
+
+longdaynum = (0*[1-9]|[1-2][1-9]|3[0-1])(th|st|nd|rd)
+
+daynum = (0*[1-9]|[1-2][1-9]|3[0-1])
+monthnum = (0*[1-9]|1[0-2])
+yearnum = (20)*\d\d
+
+unixtimestamp = \d{10,15}\.*\d{10,15}
