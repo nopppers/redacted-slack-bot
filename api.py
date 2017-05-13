@@ -86,10 +86,22 @@ def send_message(channelID, messageStr):
     outgoingMessageQueue.put(post_message)
 
 
-def send_code(messageStr):
-    return None
+def send_code(channelID, messageStr, filetype="javascript", comment=None):
+    def post_code():
+        if not comment:
+            call("files.upload",
+                 content=messageStr,
+                 filetype=filetype,
+                 channels=channelID)
+        else:
+            call("files.upload",
+                 content=messageStr,
+                 filetype=filetype,
+                 channels=channelID,
+                 initial_comment=comment)
+
+    outgoingMessageQueue.put(post_code)
 
 
-def send_error(messageStr):
-    return None
-
+def send_error(channelID, messageStr):
+    send_code(channelID, messageStr, comment="@noppers")

@@ -20,6 +20,20 @@ from rtm_message import IncomingRTMMessage
 
 log = logging.getLogger(__name__)
 
+SAMPLE_CODE = \
+"""
+template <typename T>
+T & maybe_deref(T &x)
+{
+    return x;
+}
+
+template <typename T>
+T & maybe_deref(T *x)
+{
+    return *x;
+}
+"""
 
 # Entry point
 if __name__ == "__main__":
@@ -31,6 +45,18 @@ if __name__ == "__main__":
         pprint.pprint(msg.message)
         return True, False  # Handled, not consumed
 
+    def code_test(msg):
+        if msg.isDirectedAtBot and "code test" in msg.userMessage:
+            api.send_code(msg.channel, SAMPLE_CODE, "cpp")
+            return True, True
+        return False, False
+
+    def help(msg):
+        if msg.isDirectedAtBot and "help" in msg.userMessage:
+            api.send_message(msg.channel, "Greetings. We are not currently of much help.")
+            return True, True
+        return False, False
+
     def default_handler(msg):
         if msg.isDirectedAtBot:
             api.send_message(msg.channel, "We have not learned such things yet.")
@@ -39,6 +65,8 @@ if __name__ == "__main__":
 
     responseSystem = ResponseSystem([
         (20, console_printer),
+        (80, code_test),
+        (90, help),
         (100, default_handler)
     ])
 
@@ -51,9 +79,10 @@ if __name__ == "__main__":
                 try:
                     responseSystem.handle(IncomingRTMMessage(rawMessage))
                 except Exception as e:
-                    errStr = "Error in response system: " + str(e)
+                    errStr = "Error in response system: " + str(e) + ".\n Message was: " + pprint.pformat(rawMessage)
                     log.error(errStr)
-                    api.send_error(errStr)
+                    if "channel" in rawMessage:
+                        api.send_error(rawMessage["channel"], errStr)
 
             time.sleep(1)
 
