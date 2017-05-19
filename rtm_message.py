@@ -1,5 +1,5 @@
-import json
 import config
+import string_help
 
 AT_BOT = ""
 
@@ -21,20 +21,19 @@ class IncomingRTMMessage(object):
         # If it is a message from a user, store what channel it came from
         self.channel = self.message["channel"] if self.isUserMessage else None
 
-        # Is the message directed at the bot?
-        self.isDirectedAtBot = self.isUserMessage and \
-                               "text" in self.message and \
-                               AT_BOT in self.message["text"]
-
-        if self.isUserMessage:
+        if self.isUserMessage and "text" in self.message:
+            # Is the message directed at the bot?
+            self.isDirectedAtBot = AT_BOT in self.message["text"]
             # Store the message from the user
             self.userMessage = self.message["text"]
             # Store the first word of the message from the user
-            self.firstWord = self.userMessage.split()[0]
+            self.firstWord = string_help.split_elem_or_empty_string(self.userMessage, 0)
             if self.isDirectedAtBot:
                 # Store only the message that is intended for the bot (the part after AT_BOT)
-                self.messageAtBot = self.userMessage.partition(AT_BOT)[2]
+                self.messageAtBot = string_help.partition_elem_or_empty_string(self.userMessage, 2, AT_BOT)
                 # Store the first word of that message
-                self.firstWordAtBot = self.messageAtBot.split()[0]
+                self.firstWordAtBot = string_help.split_elem_or_empty_string(self.messageAtBot, 0)
 
+        else:
+            self.isDirectedAtBot = False
 
