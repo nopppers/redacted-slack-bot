@@ -16,12 +16,12 @@ class IncomingRTMMessage(object):
         self.message = messageStr
 
         # Is the message really a message sent by a user, or is it something else like a status update?
-        self.isUserMessage = self.message["type"] == 'message'
+        self.isUserMessage = self.message["type"] == 'message' and "text" in self.message
 
         # If it is a message from a user, store what channel it came from
         self.channel = self.message["channel"] if self.isUserMessage else None
 
-        if self.isUserMessage and "text" in self.message:
+        if self.isUserMessage:
             # Is the message directed at the bot?
             self.isDirectedAtBot = AT_BOT in self.message["text"]
             # Store the message from the user

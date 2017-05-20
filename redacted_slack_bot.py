@@ -1,6 +1,7 @@
 import logging
 import pprint
 import time
+import random
 
 # from flask import Flask, request
 
@@ -41,13 +42,27 @@ if __name__ == "__main__":
     api.init()
     rtm_message.init()
 
+    learnMemory = []
+
     def console_printer(msg):
         pprint.pprint(msg.message)
         return True, False  # Handled, not consumed
 
+    def learn_memory(msg):
+        if msg.isUserMessage:
+            learnMemory.append(msg.userMessage)
+            return True, False  # Handled, not consumed
+        return False, False
+
     def code_test(msg):
         if msg.isDirectedAtBot and "code test" in msg.userMessage:
             api.send_code(msg.channel, SAMPLE_CODE, "cpp")
+            return True, True
+        return False, False
+
+    def flavor_learn(msg):
+        if msg.isDirectedAtBot and "learn" in msg.userMessage and len(learnMemory) > 0:
+            api.send_message(msg.channel, random.choice(learnMemory))
             return True, True
         return False, False
 
@@ -65,7 +80,9 @@ if __name__ == "__main__":
 
     responseSystem = ResponseSystem([
         (20, console_printer),
+        (22, learn_memory),
         (80, code_test),
+        (85, flavor_learn),
         (90, help),
         (100, default_handler)
     ])
