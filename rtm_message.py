@@ -29,7 +29,8 @@ class IncomingRTMMessage(object):
             # Is the message directed at the bot?
             self.isDirectedAtBot = AT_BOT in self.message["text"]
             # Store the message from the user
-            self.userMessage = self.message["text"]
+            self.rawUserMessage = self.message["text"]
+            self.userMessage = self.message["text"].lower()
             # Store the first word of the message from the user
             self.firstWord = string_help.split_elem_or_empty_string(self.userMessage, 0)
             if self.isDirectedAtBot:

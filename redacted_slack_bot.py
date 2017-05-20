@@ -2,6 +2,7 @@ import logging
 import pprint
 import time
 import random
+import functools
 
 # from flask import Flask, request
 
@@ -36,6 +37,40 @@ T & maybe_deref(T *x)
 }
 """
 
+greetingsList = [
+    "hi ",
+    " hi",
+    "hello",
+    "sup",
+    " yo",
+    "yo ",
+    " hey",
+    "hey ",
+    "what's up",
+    "whats up",
+    "hiya",
+    "heyo",
+    " sup",
+    "sup ",
+    "holla",
+    "what it do",
+    "what's up",
+    "whats up",
+    "what's shakin",
+    "whats shakin",
+    "wassup",
+    "whassup",
+    "wassap",
+    "whassap",
+    "greetings",
+]
+
+def is_greeting(str):
+    return any(greeting in str for greeting in greetingsList)
+
+def is_greeting_but_not_directed_at_bot(str):
+    return not rtm_message.AT_BOT.lower() in str and is_greeting(str)
+
 # Entry point
 if __name__ == "__main__":
     config.init()
@@ -50,7 +85,7 @@ if __name__ == "__main__":
 
     def learn_memory(msg):
         if msg.isUserMessage:
-            learnMemory.append(msg.userMessage)
+            learnMemory.append(msg)
             return True, False  # Handled, not consumed
         return False, False
 
@@ -62,12 +97,22 @@ if __name__ == "__main__":
 
     def flavor_learn(msg):
         if msg.isDirectedAtBot and "learn" in msg.userMessage and len(learnMemory) > 0:
-            api.send_message(msg.channel, random.choice(learnMemory))
+            api.send_message(msg.channel, random.choice(learnMemory).rawUserMessage)
+            return True, True
+        return False, False
+
+    def flavor_hello(msg):
+        if msg.isDirectedAtBot and is_greeting(msg.userMessage):
+            api.send_message(
+                msg.channel,
+                random.choice(
+                    [greeting for greeting in learnMemory if is_greeting_but_not_directed_at_bot(greeting.userMessage)]
+                ).rawUserMessage)
             return True, True
         return False, False
 
     def flavor_empty_message(msg):
-        if msg.isDirectedAtBot and msg.userMessage == rtm_message.AT_BOT:
+        if msg.isDirectedAtBot and msg.rawUserMessage == rtm_message.AT_BOT:
             api.send_message(msg.channel, "<@" + msg.userID + ">?")
             return True, True
         return False, False
@@ -89,6 +134,7 @@ if __name__ == "__main__":
         (22, learn_memory),
         (80, code_test),
         (85, flavor_learn),
+        (87, flavor_hello),
         (88, flavor_empty_message),
         (90, help),
         (100, default_handler)

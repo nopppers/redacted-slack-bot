@@ -30,11 +30,14 @@ class ResponseSystem(object):
         for priority, handler in self.handlers:
             try:
                 # Unpack multiple return values into ResponseResult
-                handlerResult = HandlerResult(*handler(messageText))
+                results = handler(messageText)
+                if not results or len(results) != 2 or any(type(elem) is not bool for elem in results):
+                    raise Exception("Handler {0} did not return correctly!".format(str(handler)))
+                handlerResult = HandlerResult(*results)
             except Exception as e:
-                errStr = "Error while attempting to handle message: " + str(e)
+                errStr = "Error while attempting to handle message with handler {}: ".format(str(handler)) + str(e)
                 log.error(errStr)
-                api.send_error(errStr)
+                api.send_error(messageText.channel, errStr)
 
             if handlerResult.handled:
                 result.handled.append(handler)
