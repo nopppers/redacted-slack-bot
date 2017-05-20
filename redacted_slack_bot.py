@@ -112,7 +112,7 @@ if __name__ == "__main__":
         return False, False
 
     def flavor_empty_message(msg):
-        if msg.isDirectedAtBot and msg.rawUserMessage == rtm_message.AT_BOT:
+        if msg.isDirectedAtBot and msg.rawUserMessage.strip() == rtm_message.AT_BOT:
             api.send_message(msg.channel, "<@" + msg.userID + ">?")
             return True, True
         return False, False
