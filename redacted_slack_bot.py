@@ -66,6 +66,12 @@ if __name__ == "__main__":
             return True, True
         return False, False
 
+    def flavor_empty_message(msg):
+        if msg.isDirectedAtBot and msg.userMessage == rtm_message.AT_BOT:
+            api.send_message(msg.channel, "<@" + msg.userID + ">?")
+            return True, True
+        return False, False
+
     def help(msg):
         if msg.isDirectedAtBot and "help" in msg.userMessage:
             api.send_message(msg.channel, "Greetings. We are not currently of much help.")
@@ -83,6 +89,7 @@ if __name__ == "__main__":
         (22, learn_memory),
         (80, code_test),
         (85, flavor_learn),
+        (88, flavor_empty_message),
         (90, help),
         (100, default_handler)
     ])

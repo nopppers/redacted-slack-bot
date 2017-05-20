@@ -21,6 +21,10 @@ class IncomingRTMMessage(object):
         # If it is a message from a user, store what channel it came from
         self.channel = self.message["channel"] if self.isUserMessage else None
 
+        # Store the ID of the user involved
+        if "user" in self.message:
+            self.userID = self.message["user"]
+
         if self.isUserMessage:
             # Is the message directed at the bot?
             self.isDirectedAtBot = AT_BOT in self.message["text"]
