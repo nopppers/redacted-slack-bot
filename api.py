@@ -4,6 +4,7 @@ import pprint
 import queue
 import threading
 import time
+from apiexception import APIException
 from slackclient import SlackClient
 
 # Slack client API object
@@ -36,11 +37,6 @@ def init():
     slack = SlackClient(config.get()["slackToken"])
     sendMessageThread = MessageQueueConsumer()
     sendMessageThread.start()
-
-
-# Thrown when an API call fails
-class APIException(Exception):
-    pass
 
 
 # Performs an API call without raising errors

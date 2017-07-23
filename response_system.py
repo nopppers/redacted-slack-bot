@@ -1,5 +1,6 @@
 import bisect
 import logging
+import traceback
 
 import api
 
@@ -32,10 +33,11 @@ class ResponseSystem(object):
                 # Unpack multiple return values into ResponseResult
                 results = handler(messageText)
                 if not results or len(results) != 2 or any(type(elem) is not bool for elem in results):
-                    raise Exception("Handler {0} did not return correctly!".format(str(handler)))
+                    raise Exception("Handler {0} did not return correctly!\n".format(str(handler)))
                 handlerResult = HandlerResult(*results)
             except Exception as e:
                 errStr = "Error while attempting to handle message with handler {}: ".format(str(handler)) + str(e)
+                errStr += "\n" + traceback.format_exc();
                 log.error(errStr)
                 api.send_error(messageText.channel, errStr)
 

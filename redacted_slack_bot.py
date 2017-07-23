@@ -3,14 +3,20 @@ import pprint
 import time
 import random
 import functools
+import json
 
 # from flask import Flask, request
 
 import config
 import api
+import discourse
 import response_system
 import rtm_message
+import usermap
+import python_glue
+import traceback
 
+from apiexception import DiscourseAPIException
 from response_system import ResponseSystem
 from rtm_message import IncomingRTMMessage
 
@@ -71,10 +77,30 @@ def is_greeting(str):
 def is_greeting_but_not_directed_at_bot(str):
     return not rtm_message.AT_BOT.lower() in str and is_greeting(str)
 
+def infer_command_implicit_idx(commandSearchStrs, msg):
+    for command in commandSearchStrs:
+        commandIdx = msg.userMessage.find(command)
+        if commandIdx != -1:
+            afterCommandIdx = commandIdx + len(command)
+            return max(afterCommandIdx, msg.indexAfterArgs)
+
+    return None
+
+def infer_command_implicit_contents(commandSearchStrs, msg):
+    idx = infer_command_implicit_idx(commandSearchStrs, msg)
+    if idx is None:
+        return None
+    else:
+        return msg.rawUserMessage[idx:]
+
+
+
 # Entry point
 if __name__ == "__main__":
     config.init()
     api.init()
+    discourse.init()
+    usermap.init()
     rtm_message.init()
 
     learnMemory = []
@@ -89,6 +115,60 @@ if __name__ == "__main__":
             return True, False  # Handled, not consumed
         return False, False
 
+    def create_topic(msg):
+        if msg.isDirectedAtBot:
+            postText = infer_command_implicit_contents(["create topic", "new topic", "new post", "create post"], msg)
+            if postText is not None:
+                for usernameKeyName in ["user", "username", "person", "poster", "creator", "originator", "by", "from", "postedby", "posted_by", "post_by", "postby", "who"]:
+                    # If the user provided an argument for who's posting
+                    if usernameKeyName in msg.args:
+                        postingSlackUser = msg.args[usernameKeyName]
+                        postingUser = usermap.slack_to_discourse(postingSlackUser)
+                        # If we can't convert the username to a discourse name then maybe the username IS a discourse name!
+                        if postingUser is None and usermap.is_discourse_user(postingSlackUser):
+                            postingUser = postingSlackUser
+
+                    else:  # If the user didn't provide an argument for who's posting
+                        postingSlackUser = "<@" + msg.userID + ">"
+                        postingUser = usermap.slack_to_discourse(msg.userID)
+
+                titleArgKey = python_glue.find_key_in_dict(["title", "name", "about", "postname", "post_name", "named", "reason", "topicname", "topic_name"], msg.args)
+                topicTitle = msg.args.get(titleArgKey)
+
+                categoryKey = python_glue.find_key_in_dict(["cat", "category", "tagged", "type", "system", "discipline", "where", "in"], msg.args)
+                category = msg.args.get(categoryKey)
+
+                dateKey = python_glue.find_key_in_dict(["date", "time", "when", "datetime", "date_time"], msg.args)
+                date = msg.args.get(dateKey)
+
+                # If we make it this far and postingUser is None then we don't have a mapping for them
+                if postingUser is None:
+                    api.send_message(msg.channel,
+                         "Sorry, we don't know who " + postingSlackUser + " is on discourse." +
+                         " Please add a user mapping by telling me to mapuser <slackID>:<discourseID>")
+                    return True, True
+                elif topicTitle is None:
+                    api.send_message(msg.channel,
+                         "We must name the topic. Please provide title:\"Topic Name\"")
+                    return True, True
+                else:
+                    try:
+                        response = discourse.create_topic(postingUser,
+                                               topicTitle,
+                                               postText,
+                                               categoryName=category,
+                                               creationDate=date)
+                        api.send_message(msg.channel, "Topic created.")
+                        api.send_code(msg.channel, pprint.pformat(response))
+                    except DiscourseAPIException as e:
+                        for errMsg in e.userFriendlyErrorStrList:
+                            api.send_message(msg.channel, errMsg)
+
+                    return True, True
+
+        return False, False
+
+
     def code_test(msg):
         if msg.isDirectedAtBot and "code test" in msg.userMessage:
             api.send_code(msg.channel, SAMPLE_CODE, "cpp")
@@ -102,7 +182,7 @@ if __name__ == "__main__":
         return False, False
 
     def flavor_hello(msg):
-        if msg.isDirectedAtBot and is_greeting(msg.userMessage):
+        if msg.isDirectedAtBot and is_greeting(msg.userMessage) and len(learnMemory) > 0:
             api.send_message(
                 msg.channel,
                 random.choice(
@@ -119,7 +199,8 @@ if __name__ == "__main__":
 
     def help(msg):
         if msg.isDirectedAtBot and "help" in msg.userMessage:
-            api.send_message(msg.channel, "Greetings. We are not currently of much help.")
+            postingSlackUser = "<@" + msg.userID + ">"
+            api.send_message(msg.channel, "Hello, " + postingSlackUser + "!")
             return True, True
         return False, False
 
@@ -132,6 +213,7 @@ if __name__ == "__main__":
     responseSystem = ResponseSystem([
         (20, console_printer),
         (22, learn_memory),
+        (75, create_topic),
         (80, code_test),
         (85, flavor_learn),
         (87, flavor_hello),
@@ -150,6 +232,7 @@ if __name__ == "__main__":
                     responseSystem.handle(IncomingRTMMessage(rawMessage))
                 except Exception as e:
                     errStr = "Error in response system: " + str(e) + ".\n Message was: " + pprint.pformat(rawMessage)
+                    errStr += traceback.format_exc();
                     log.error(errStr)
                     if "channel" in rawMessage:
                         api.send_error(rawMessage["channel"], errStr)
