@@ -1,6 +1,7 @@
 
 import pathlib
 import json
+from apiexception import APIException
 
 import config
 
@@ -29,14 +30,17 @@ def init():
 
 
 def save_mappings():
-    with usermapfilepath.open() as usermapfile:
+    with usermapfilepath.open('w') as usermapfile:
         json.dump(slackToDiscourse, usermapfile)
 
 
 def add_user(slackName, discourseName):
-    slackToDiscourse[slackName] = discourseName
-    discourseToSlack[discourseName] = slackName
-    save_mappings()
+    if (discourseName in config.get()["discourseTokens"]):
+        slackToDiscourse[slackName] = discourseName
+        discourseToSlack[discourseName] = slackName
+        save_mappings()
+    else:
+        raise APIException("We don't have a token for " + discourseName + ". Is that really a discourse username? @noppers")
 
 
 def slack_to_discourse(slackName):

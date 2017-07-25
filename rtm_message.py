@@ -69,6 +69,8 @@ def get_kvps(messageStr):
     val = get_val_from_delim_split(delimSplit[len(delimSplit) - 1])
     if key is not None and val is not None:
         dict[key] = val
+        lastValidKey = key
+        lastValidVal = val
 
     indexAfterLastKVP = None;
     if lastValidVal is not None:

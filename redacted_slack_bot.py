@@ -16,7 +16,7 @@ import usermap
 import python_glue
 import traceback
 
-from apiexception import DiscourseAPIException
+from apiexception import DiscourseAPIException, APIException
 from response_system import ResponseSystem
 from rtm_message import IncomingRTMMessage
 
@@ -115,22 +115,34 @@ if __name__ == "__main__":
             return True, False  # Handled, not consumed
         return False, False
 
+    def map_user(msg):
+        if msg.isDirectedAtBot:
+            if (infer_command_implicit_idx(["mapuser"], msg) is not None):
+                for slackName, discourseName in msg.args.items():
+                    try:
+                        usermap.add_user(slackName, discourseName)
+                        api.send_message(msg.channel, "We have added it. Thank you for your knowledge.")
+                    except APIException as e:
+                        api.send_message(msg.channel, str(e))
+                return True, True
+        return False, False
+
+
     def create_topic(msg):
         if msg.isDirectedAtBot:
             postText = infer_command_implicit_contents(["create topic", "new topic", "new post", "create post"], msg)
             if postText is not None:
-                for usernameKeyName in ["user", "username", "person", "poster", "creator", "originator", "by", "from", "postedby", "posted_by", "post_by", "postby", "who"]:
-                    # If the user provided an argument for who's posting
-                    if usernameKeyName in msg.args:
-                        postingSlackUser = msg.args[usernameKeyName]
-                        postingUser = usermap.slack_to_discourse(postingSlackUser)
-                        # If we can't convert the username to a discourse name then maybe the username IS a discourse name!
-                        if postingUser is None and usermap.is_discourse_user(postingSlackUser):
-                            postingUser = postingSlackUser
-
-                    else:  # If the user didn't provide an argument for who's posting
-                        postingSlackUser = "<@" + msg.userID + ">"
-                        postingUser = usermap.slack_to_discourse(msg.userID)
+                userArgKey = python_glue.find_key_in_dict(["user", "username", "person", "poster", "creator", "originator", "by", "from", "postedby", "posted_by", "post_by", "postby", "who"], msg.args)
+                # If the user provided an argument for who's posting
+                if (userArgKey is not None):
+                    postingSlackUser = msg.args[userArgKey]
+                    postingUser = usermap.slack_to_discourse(postingSlackUser)
+                    # If we can't convert the username to a discourse name then maybe the username IS a discourse name!
+                    if postingUser is None and usermap.is_discourse_user(postingSlackUser):
+                        postingUser = postingSlackUser
+                else:  # If the user didn't provide an argument for who's posting
+                    postingSlackUser = "<@" + msg.userID + ">"
+                    postingUser = usermap.slack_to_discourse(msg.userID)
 
                 titleArgKey = python_glue.find_key_in_dict(["title", "name", "about", "postname", "post_name", "named", "reason", "topicname", "topic_name"], msg.args)
                 topicTitle = msg.args.get(titleArgKey)
@@ -158,8 +170,8 @@ if __name__ == "__main__":
                                                postText,
                                                categoryName=category,
                                                creationDate=date)
-                        api.send_message(msg.channel, "Topic created.")
-                        api.send_code(msg.channel, pprint.pformat(response))
+                        api.send_message(msg.channel, "Topic created: http://discourse.mnmn.me/t/" + response["topic_slug"])
+                        #api.send_code(msg.channel, pprint.pformat(response))
                     except DiscourseAPIException as e:
                         for errMsg in e.userFriendlyErrorStrList:
                             api.send_message(msg.channel, errMsg)
@@ -213,6 +225,7 @@ if __name__ == "__main__":
     responseSystem = ResponseSystem([
         (20, console_printer),
         (22, learn_memory),
+        (70, map_user),
         (75, create_topic),
         (80, code_test),
         (85, flavor_learn),
