@@ -115,9 +115,26 @@ if __name__ == "__main__":
             return True, False  # Handled, not consumed
         return False, False
 
+    def get_history(msg):
+        if msg.isDirectedAtBot:
+            if (infer_command_implicit_idx(["get history"], msg) is not None):
+                oldestKey = python_glue.find_key_in_dict(["oldest", "earliest", "youngest", "first", "begin", "start"], msg.args)
+                oldest = msg.args.get(oldestKey)
+                newestKey = python_glue.find_key_in_dict(["newest", "latest", "oldest", "last", "end", "stop"], msg.args)
+                newest = msg.args.get(newestKey)
+
+                if (oldest is None):
+                    api.send_message(msg.channel, "We must learn the earliest message to retrieve. Tell us as oldest:<unixtimestamp>. You may also tell us newest:<unixtimestamp>.")
+                    return True, True
+
+                response = api.get_history(msg.channel, oldest, newest)
+                api.send_code(msg.channel, json.dumps(response))
+                return True, True
+        return False, False
+
     def map_user(msg):
         if msg.isDirectedAtBot:
-            if (infer_command_implicit_idx(["mapuser"], msg) is not None):
+            if (infer_command_implicit_idx(["map user"], msg) is not None):
                 for slackName, discourseName in msg.args.items():
                     try:
                         usermap.add_user(slackName, discourseName)
@@ -157,7 +174,7 @@ if __name__ == "__main__":
                 if postingUser is None:
                     api.send_message(msg.channel,
                          "Sorry, we don't know who " + postingSlackUser + " is on discourse." +
-                         " Please add a user mapping by telling me to mapuser <slackID>:<discourseID>")
+                         " Please add a user mapping by telling me to map user <slackID>:<discourseID>")
                     return True, True
                 elif topicTitle is None:
                     api.send_message(msg.channel,
@@ -195,12 +212,14 @@ if __name__ == "__main__":
 
     def flavor_hello(msg):
         if msg.isDirectedAtBot and is_greeting(msg.userMessage) and len(learnMemory) > 0:
-            api.send_message(
-                msg.channel,
-                random.choice(
-                    [greeting for greeting in learnMemory if is_greeting_but_not_directed_at_bot(greeting.userMessage)]
-                ).rawUserMessage)
-            return True, True
+            possibleGreetings = [greeting for greeting in learnMemory if is_greeting_but_not_directed_at_bot(greeting.userMessage)]
+            if (len(possibleGreetings) > 0):
+                api.send_message(
+                    msg.channel,
+                    random.choice(
+                        possibleGreetings
+                    ).rawUserMessage)
+                return True, True
         return False, False
 
     def flavor_empty_message(msg):
@@ -225,6 +244,7 @@ if __name__ == "__main__":
     responseSystem = ResponseSystem([
         (20, console_printer),
         (22, learn_memory),
+        (65, get_history),
         (70, map_user),
         (75, create_topic),
         (80, code_test),

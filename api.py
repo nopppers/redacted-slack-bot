@@ -101,3 +101,18 @@ def send_code(channelID, messageStr, filetype="javascript", comment=None):
 
 def send_error(channelID, messageStr):
     send_code(channelID, messageStr, comment="@noppers")
+
+def get_history(channelID, unixStampOldest, unixStampNewest = None):
+    if (unixStampNewest is None):
+        return call("channels.history",
+                    channel=channelID,
+                    count=1000,
+                    inclusive=True,
+                    oldest=unixStampOldest)
+    else:
+        return call("channels.history",
+                    channel=channelID,
+                    count=1000,
+                    inclusive=True,
+                    latest=unixStampNewest,
+                    oldest=unixStampOldest)
